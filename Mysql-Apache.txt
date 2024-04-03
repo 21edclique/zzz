@@ -1,0 +1,291 @@
+
+
+===========================MYSQL==================================
+show databases;
+
+show tables;
+
+exit;
+=============================================================
+
+
+
+-------------------------Para esta practica debo tener dos maquinas virtuales-------------------------
+
+
+---------------------------------------Maquina 01---------------------------------------
+
+//Actualizo el sistema
+
+yum update --refresh -y
+
+//Instalo mysql
+
+yum install mysql mysql-server -y
+
+//Inicio mysql
+
+systemctl start mysqld
+
+//Verifico el estado del servicio de mysql
+
+systemctl status mysqld
+
+//Para que se inicie automáticamente el servicio de mysql
+
+systemctl enable mysqld
+
+//--------Configuracion--------
+
+mysql_secure_installation
+
+//Firewall configuración
+
+firewall-cmd --permanent --zone=public --add-service=mysql
+firewall-cmd --reload
+
+
+//------Trabajo con mysql--------
+
+//Ingreso para trabajar con el servicio
+
+mysql -u root -p
+
+//Creo la base de datos
+
+create database bd_wordpress;
+
+//Para que funcione la conexión externa y pueda comunicarme desde 
+//un servidor remoto en vez de localhost
+
+rename user 'root'@'localhost' to 'root'@'%';
+
+--------------------------------------------------------------------------------------------
+segundo ‘root’ = nuevo nombre para la conexión remota
+‘%’ = ip para servidor remoto, uso comodin % que admite conexiones remotas desde cualquier ip
+--------------------------------------------------------------------------------------------
+
+//Agregar el comando setenforce para no bloquear operaciones entre dispositivos (afuera de mysql)
+
+setenforce 0
+
+//Permitir a sql escuchar trafico externo
+
+	//entrar a la ruta /etc/my.cnf.d
+	//Modificar el documento mysql-server.cnf
+
+   //Si el documento anterior no existe debemos crearlo por cuenta propia y colocar lo siguiente adentro de el 
+
+[mysqld]
+bind-address=0.0.0.0
+
+
+//Reseteo el servicio de mysqld
+
+sudo systemctl restart mysqld 
+
+systemctl restart mysqld
+
+//Abrir puertos para que funciones las conexiones
+
+sudo firewall-cmd --add-port=3306/tcp --permanent
+
+//****Si quiero eliminar el Puerto
+sudo firewall-cmd --remove-port=3306/tcp --permanent
+
+
+//Recargar lo hecho para que se guarden los cambios
+
+sudo firewall-cmd --reload
+
+
+---------En otra maquina virtual me puedo conectar a la base de datos---------------
+--------------para verificar lo puedo hacer en la de wordpress-------------------
+
+//Conectarse a la base de datos en otro servidor
+
+(Es importante tener el sql instalado tambien en la maquina que se va a probar)
+(sudo dnf install mysql)
+
+mysql -u user -h database_server_ip -p
+
+mysql -u remoto -h 192.168.100.139 -p
+
+1. USER(nombre del usuario de la BD)
+2. Database_server_ip -p (ip del servidor)
+3. La pw (tiene que ser la especificada para el usuario que se conectara remotamente)
+
+
+---------------------------------------MAQUINA WORDPRESS--------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------
+---------Despues de ver que funciona, puedo relaizar lo siguiente en mi maquina virtual de wordpress-------------
+
+Instalar Apache para hacer que sea un servidor
+
+ yum install httpd -y
+
+1. Levantamos el servicio
+
+ service httpd start
+
+2. Verificamos que el servicio este activo 
+
+service httpd status
+
+3. Configurar que se inicie el servicio http cuando se inicie el Sistema Operativo:
+
+ systemctl enable httpd
+
+4. Habilito el http
+
+ firewall-cmd --permanent --zone=public --add-service=http
+
+5. Habilito Https
+
+firewall-cmd --permanent --zone=public --add-service=https
+
+6. Recargar las reglas del firewall, este habilita para que se pueda evidenciar el levantamiento del servidor
+
+firewall-cmd --reload
+
+//Probar que funcione Apache en mi navegador usando la IP de mi maquina
+
+
+7. Después en la línea de comandos ingresamos a la dirección "/var/www/html" para comenzar a trabajar
+
+	Creamos el archivo 
+
+	nano index.html (Pongo cualquier etiqueta para evidenciar)
+
+	//Recargar la pagina para evidenciar los cambios en el index
+
+
+
+---------------Instalar php*------------
+
+
+1. Habilitar CRB
+
+dnf config-manager --set-enabled crb
+
+2. Instalar Repositorio EPEL
+
+sudo dnf install \
+https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
+https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-9.noarch.rpm
+
+4. Habilitar el repositorio de php que deseamos instalar 
+
+//# Utilizar el siguiente comando para ver la lista de módulos dnf
+//# para ver las opciones disponibles de PHP
+
+dnf module list php
+
+//# Habilitar el módulo de PHP que se desea instalar
+
+dnf module enable php:remi-8.1 -y
+
+5. Instalar PHP en la versión habilitada anteriormente
+
+//# Instalación para Apache (httpd)
+
+dnf install php -y
+
+//# Instalación para Apache (httpd)
+
+dnf install php-fpm -y
+
+//# Instalar los módulos más utilizados para PHP
+
+dnf install php-cli php-fpm php-curl php-mysqlnd php-gd php-opcache php-zip php-intl php-common php-bcmath php-imagick php-xml
+
+//# Verificar los módulos instalados
+
+php -m
+
+OPCIONAL #### Instalar herramientas de desarrollo (opcional)
+
+dnf install php-devel
+
+OPCIONAL ### Instalar herramientas de depuración (opcional)
+
+dnf install php-xdebug php-pcov
+
+//# Verificar instalación
+php -v
+
+//# Reiniciar servicios
+systemctl restart php-fpm
+systemctl restart httpd
+
+
+//####Comprobar que php funcione//
+
+Creo un archivo php en la direccion /var/www/html
+
+rm index.html 
+nano index.php
+
+<?php
+phpinfo();
+?>
+
+
+---------Descargar Wordpress---------
+
+
+**instalo para descomprimir el unzip
+
+yum install wget unzip -y
+
+**uso el comando //esto en /var/www/html
+
+wget https://es-ec.wordpress.org/latest-es_EC.zip
+
+**Descomprimir el .zip 
+
+unzip latest-es_EC.zip
+
+**lanzar el comando para habilitar operaciones
+
+setenforce 0
+
+**Puedo ingresar a la ruta ip/wordpress (10.79.7.151/wordpress)
+
+
+
+
+
+Cuando ingreso todos los datos en el wordpress me va a dar codigo, eso lo copio y pego en la archivo, y si no tengo ese archivo lo creo 
+
+wp-config.php
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

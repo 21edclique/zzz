@@ -1,0 +1,174 @@
+yahoo.es
+outlook.es
+gmail.com
+.gov.ec
+
+
+Bloquear  paginas a mi eleccion
+--------------------------------------------------------------------------------------------------
+Crear maquinas virtuales con adaptador puente
+
+--Para ver el nombre
+hostname 
+
+---Para cambiar el nombre
+hostnamectl hostname (nombre que quiero)
+hostnamectl hostname pepito
+
+
+--Despues de hace eso debo reiniciar el equipo
+
+reboot -h 0 
+
+
+---Cambiar la ip a automatica si es que la tengo en manual
+
+nmtui 
+---------------------------------------------------------------------------------------------------
+
+//Actualizar alma linux
+
+yum update --refresh
+
+
+//Instalar repositorio que ayuda con el manejo de squid 
+
+yum install epel-release -y
+
+
+//Instalar squid
+  
+yum install squid -y
+
+//Ejecutar squid en mi maquina
+
+systemctl start squid
+
+//Cuando se inicie el sistema operativo también se inicie el servidor squid
+
+systemctl enable squid
+
+//Una vez configurado debo ingresar a la siguiente ruta
+
+cd /etc/squid
+
+//Creo archivo para restringir las palabras clave
+
+nano palabras-bloqueo
+
+ejemplo
+xxx
+nopor
+...
+
+//Archivo para bloquear los sitios web
+
+nano paginas-bloqueo
+
+ejemplo
+www.facebook.com
+www.tiktok.com
+www.instagram.com
+
+//Es necesario sacar un respaldo del servidor proxy en especial del 
+//del archivo (squid.conf) ya que en el proceso pueden haber errores.
+
+cp squid.conf squid.conf.bak
+
+//Entrar al archivo de squid.conf
+
+nano squid.conf
+
+//Comentar todas las lineas desde
+
+#acl localnet src 0.0.0.1 -0.255.255.255
+
+#acl localnet src fe80::/10
+
+=========================================================================================
+acl localnet src 0.0.0.1-0.255.255.255  # RFC 1122 "this" network (LAN)
+acl localnet src 10.0.0.0/8             # RFC 1918 local private network (LAN)
+acl localnet src 100.64.0.0/10          # RFC 6598 shared address space (CGN)
+acl localnet src 169.254.0.0/16         # RFC 3927 link-local (directly plugged) machines
+acl localnet src 172.16.0.0/12          # RFC 1918 local private network (LAN)
+acl localnet src 192.168.0.0/16         # RFC 1918 local private network (LAN)
+acl localnet src fc00::/7               # RFC 4193 local private network range
+acl localnet src fe80::/10              # RFC 4291 link-local (directly plugged) machines
+=========================================================================================
+
+
+
+
+//Creo una regla para que el servidor proxy bloquee las paginas que le proporciono,
+//esto lo debo hacer igualmente en el archivo squid.conf debajo de lo que bloquee
+//en el paso anterior.
+
+	//ojo con palabras usa url_regex
+
+acl palabras url_regex "/etc/squid/wordblock"
+acl paginas dstdomain "/etc/squid/sitesblock"
+
+
+//Importante comentar lo siguiente
+
+=========================================================================================
+http_access allow localnet
+http_access allow localhost
+# And finally deny all other access to this proxy
+http_access deny all
+=========================================================================================
+ 
+//Debajo de las dos primeras lineas comentadas del paso anterior colocar lo siguiente
+//paginas y palabras son los nombres de acl paginas dstdomain “/etc/squid/paginas-bloqueo”
+//de hace 2 pasos.
+
+http_access deny paginas
+http_access deny palabras
+http_access allow all
+
+
+//Reiniciar el servidor Proxy
+
+service squid restart
+
+
+//Verificar que todo funcione
+
+systemctl status squid
+
+
+//Regla que menciona al firewall que debe aplicar esta regla de squid obligadamente
+
+firewall-cmd --add-service=squid --permanent
+firewall-cmd --reload
+
+
+//Para ver el puerto que se ejecuta es en 
+
+squid.conf
+
+(http_port 3128)
+
+--------------------------------------------EN WINDOWS---------------------------------------
+
+AGREGAR UN PROXY SERVER CON LA IP DE LA MAQUINA VIRTUAL y comprobar que se bloquee lo mencionado
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
